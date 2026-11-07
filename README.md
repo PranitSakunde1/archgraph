@@ -34,6 +34,7 @@ The workspace can contain multiple nested Git repositories. ArchGraph discovers 
 
 ## Documentation
 
+- [ArchGraph by persona: Product Manager, Business Analyst, Tech Lead, QA Engineer, QA Lead and Developer](docs/product/persona-use-cases.md)
 - [Architecture blueprint](docs/architecture/architecture-blueprint.md)
 - [Architecture grill decision register](docs/decisions/architecture-grill-decisions.md)
 - [Docker runtime design](docs/architecture/docker-runtime.md)
