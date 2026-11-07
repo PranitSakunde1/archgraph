@@ -1,34 +1,36 @@
 # ArchGraph
 
-Deterministic, local-first architecture intelligence for multi-repository workspaces.
+Deterministic, local-first architecture discovery for multi-repository workspaces.
 
-ArchGraph scans a workspace, discovers Git repositories and service identities from `codeway.yaml`, correlates application code with AWS resources, APIs, events, databases and data flows, then emits evidence-backed architecture artifacts.
+ArchGraph scans a workspace, discovers nested Git repositories and service identities from recursively found codeway.yaml/codeway.yml files, and emits a JSON graph plus a Markdown inventory report. The current scanner uses deterministic source-pattern candidates. Those matches are evidence for further analysis, not proof of a complete runtime relationship.
 
-## Design principles
+## Current MVP
 
-- No LLM calls in discovery, parsing, graph generation or validation.
-- One-shot Docker execution: scan, export artifacts, exit.
-- Read-only source mounts by default.
-- Local-first graph artifacts; Neo4j is optional future infrastructure.
-- Graphify-first code graph extraction, with deterministic ArchGraph enrichers.
-- Confirmed, inferred and unresolved relationships remain distinguishable.
-- No live AWS account queries in v1.
-- Application architecture is in scope; deployment topology is not.
+- Recursive discovery of Git repositories under a workspace.
+- Service/Lambda identity candidates from common codeway YAML keys.
+- Inventory of Go, Java, Python, TypeScript and JavaScript source files.
+- Initial deterministic candidates for AWS operations, API routes, database access and Terraform resources.
+- Evidence attached to discovered nodes and inferred source-to-service containment edges.
+- JSON and Markdown output.
+- One-shot Docker execution with read-only source mounts.
+
+Not yet implemented: Graphify invocation/normalization, deep AST analysis, cross-repository edge resolution, full resource mapping, schema-level database discovery, field lineage, security scanner integrations, graph diff/impact analysis and journey execution.
 
 ## Docker workflow
 
-```powershell
-docker build --pull -t archgraph:dev .
+    docker build --pull -t archgraph:dev .
 
-New-Item -ItemType Directory -Force .\archgraph-output | Out-Null
+    New-Item -ItemType Directory -Force .\archgraph-output | Out-Null
 
-docker run --rm `
-  -v "D:\work\repositories:/workspace:ro" `
-  -v "${PWD}\archgraph-output:/output" `
-  archgraph:dev scan --path /workspace --output /output
-```
+    docker run --rm -v "D:\work\repositories:/workspace:ro" -v "${PWD}\archgraph-output:/output" archgraph:dev scan --path /workspace --output /output
 
 The workspace can contain multiple nested Git repositories. ArchGraph discovers them automatically. The output directory is mounted separately so source repositories remain read-only.
+
+## Local development
+
+    go test ./...
+    go vet ./...
+    go run ./cmd/archgraph scan --path ./fixtures --output ./out
 
 ## Documentation
 
@@ -36,14 +38,19 @@ The workspace can contain multiple nested Git repositories. ArchGraph discovers 
 - [Architecture grill decision register](docs/decisions/architecture-grill-decisions.md)
 - [Docker runtime design](docs/architecture/docker-runtime.md)
 
-## Language targets
+## Target language/framework coverage
 
-Go, Java, Python, React, TypeScript and JavaScript. React has framework-specific discovery in addition to TypeScript/JavaScript parsing.
+Go, Java, Python, React, TypeScript and JavaScript. React requires framework-specific component, hook, route and API-client discovery in addition to TypeScript/JavaScript analysis. The full target coverage is planned; current MVP matching is intentionally shallow.
 
-## Implementation status
+## Design constraints
 
-This repository is the implementation home and design record. The blueprint describes the target system; it is not a claim that every capability is already implemented. Discovery coverage, adapters and gates must be validated against representative repositories before being treated as production-ready.
+- No LLM calls during discovery, parsing, graph generation or validation.
+- One-shot Docker execution: scan, export, exit.
+- Read-only source mounts by default.
+- No live AWS account queries in v1.
+- Application architecture is in scope; deployment topology is not.
+- Confirmed, inferred and unresolved relationships must remain distinguishable as discovery matures.
 
 ## First engineering milestone
 
-Validate real `codeway.yaml` examples, Graphify output, internal AWS wrapper implementations, infrastructure resource definitions and one end-to-end business journey. These become acceptance fixtures for deterministic discovery.
+Validate real codeway.yaml examples, internal AWS wrapper implementations, resource definitions and one end-to-end business journey. These become acceptance fixtures before broadening discovery or introducing CI gates.
