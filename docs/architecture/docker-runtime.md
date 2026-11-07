@@ -5,13 +5,12 @@
 ArchGraph v1 is a one-shot container:
 
 1. Start the container.
-2. Discover repositories under the mounted workspace or use explicit repository paths.
+2. Discover Git repositories under the mounted workspace.
 3. Read source and configuration through read-only mounts.
-4. Stage temporary extraction copies inside the container when a tool requires writable inputs.
-5. Run deterministic discovery and Graphify in code-only mode.
-6. Validate and export artifacts to the mounted output directory.
-7. Exit with a documented status code.
-8. Container is removed by docker run --rm.
+4. Run deterministic MVP discovery for service identity, source inventory and selected code/resource patterns.
+5. Export architecture.json and architecture.md to the mounted output directory.
+6. Exit with a documented status code.
+7. The caller removes the container with docker run --rm.
 
 There is no background daemon, HTTP API or persistent server in v1.
 
@@ -21,18 +20,11 @@ There is no background daemon, HTTP API or persistent server in v1.
 
     New-Item -ItemType Directory -Force .\archgraph-output | Out-Null
 
-    docker run --rm `
-      -v "D:\work\repositories:/workspace:ro" `
-      -v "${PWD}\archgraph-output:/output" `
-      archgraph:dev scan --path /workspace --output /output
+    docker run --rm -v "D:\work\repositories:/workspace:ro" -v "${PWD}\archgraph-output:/output" archgraph:dev scan --path /workspace --output /output
 
-## Multiple explicit repositories
+## Multiple repositories
 
-    docker run --rm `
-      -v "D:\work\service-a:/repos/service-a:ro" `
-      -v "D:\work\service-b:/repos/service-b:ro" `
-      -v "${PWD}\archgraph-output:/output" `
-      archgraph:dev scan --repo /repos/service-a --repo /repos/service-b --output /output
+Mount a parent workspace containing multiple Git repositories. ArchGraph recursively discovers nested Git repositories and stops descending after finding a repository boundary.
 
 ## Security and reproducibility
 
@@ -41,17 +33,19 @@ There is no background daemon, HTTP API or persistent server in v1.
 - Mount output separately with only the permissions required to write artifacts.
 - Do not pass AWS credentials; v1 does not query live AWS accounts.
 - Do not make LLM calls during discovery.
-- Pin Graphify and runtime versions. Production releases should additionally pin base images by OCI digest and retain an SBOM.
-- Network is not needed during scanning once the image is built; image construction may need network unless dependencies are pre-cached.
-- A fully hash-locked Python dependency wheelhouse and immutable base-image digests remain prerequisites for bit-for-bit reproducible builds.
+- The current MVP has no external runtime dependencies beyond the Go binary and CA certificates.
+- Docker build uses versioned Go and Alpine image tags. Production releases should pin base images by OCI digest and retain an SBOM.
+- The image can scan offline after it has been built.
 
 ## Exit status
 
 - 0: scan completed without warnings.
 - 1: execution, filesystem or configuration error.
-- 2: reserved for critical architecture validation failure; not yet implemented by the MVP.
+- 2: command usage error.
 - 3: output generated but discovery is incomplete or warnings exist.
 
-## Future, not v1
+## Deferred integrations
+
+Graphify invocation and graph normalization are target architecture items, not part of the current MVP binary. They will be integrated only after pinning the Graphify output schema and adding acceptance fixtures.
 
 A long-running server/API/MCP mode is intentionally deferred. It must not be added until graph query and journey execution interfaces are stable.
