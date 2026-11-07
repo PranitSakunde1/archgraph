@@ -1,0 +1,4 @@
+.archgraph/
+*.exe
+*.test
+coverage.out
