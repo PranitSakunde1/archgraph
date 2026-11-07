@@ -1,0 +1,3 @@
+# Graphify CLI distribution is named graphifyy; executable is `graphify`.
+# Keep this version synchronized with the Graphify version in Dockerfile.
+graphifyy==0.9.35
