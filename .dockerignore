@@ -1,0 +1,14 @@
+.git
+**/.git
+**/node_modules
+**/vendor
+**/.venv
+**/venv
+**/dist
+**/build
+**/target
+**/.terraform
+**/.archgraph
+*.zip
+archgraph-output
+output
