@@ -19,15 +19,15 @@ type Graph struct { SchemaVersion string; GeneratedAt time.Time; Repositories []
 
 var codeExt = map[string]string{".go":"Go",".java":"Java",".py":"Python",".ts":"TypeScript",".tsx":"TypeScript",".js":"JavaScript",".jsx":"JavaScript"}
 var signatures = map[string]*regexp.Regexp{
- "aws_sns":regexp.MustCompile(`(?i)(Publish\\(|PublishInput|SNSClient|sns\\.publish)`),
- "aws_sqs":regexp.MustCompile(`(?i)(SendMessage\\(|ReceiveMessage\\(|SQSClient)`),
- "aws_eventbridge":regexp.MustCompile(`(?i)(PutEvents\\(|EventBridgeClient)`),
- "aws_kinesis":regexp.MustCompile(`(?i)(PutRecord\\(|PutRecords\\(|KinesisClient)`),
- "aws_lambda":regexp.MustCompile(`(?i)(Invoke\\(|LambdaClient|lambda\\.invoke)`),
- "aws_dynamodb":regexp.MustCompile(`(?i)(DynamoDbClient|DynamoDBClient|GetItem\\(|PutItem\\(|UpdateItem\\()`),
- "database_mongo":regexp.MustCompile(`(?i)(mongo\\.Connect|MongoClient|collection\\.(Find|Insert|Update|Delete))`),
- "database_sql":regexp.MustCompile(`(?i)(database/sql|sql\\.Open|JdbcTemplate|@Query\\(|SELECT\\s+.+\\s+FROM)`),
- "api_route":regexp.MustCompile(`(?i)(http\\.HandleFunc|@GetMapping|@PostMapping|@RequestMapping|app\\.(get|post|put|delete)|router\\.(get|post|put|delete))`),
+ "aws_sns":regexp.MustCompile(`(?i)(Publish\(|PublishInput|SNSClient|sns\.publish)`),
+ "aws_sqs":regexp.MustCompile(`(?i)(SendMessage\(|ReceiveMessage\(|SQSClient)`),
+ "aws_eventbridge":regexp.MustCompile(`(?i)(PutEvents\(|EventBridgeClient)`),
+ "aws_kinesis":regexp.MustCompile(`(?i)(PutRecord\(|PutRecords\(|KinesisClient)`),
+ "aws_lambda":regexp.MustCompile(`(?i)(Invoke\(|LambdaClient|lambda\.invoke)`),
+ "aws_dynamodb":regexp.MustCompile(`(?i)(DynamoDbClient|DynamoDBClient|GetItem\(|PutItem\(|UpdateItem\()`),
+ "database_mongo":regexp.MustCompile(`(?i)(mongo\.Connect|MongoClient|collection\.(Find|Insert|Update|Delete))`),
+ "database_sql":regexp.MustCompile(`(?i)(database/sql|sql\.Open|JdbcTemplate|@Query\(|SELECT\s+.+\s+FROM)`),
+ "api_route":regexp.MustCompile(`(?i)(http\.HandleFunc|@GetMapping|@PostMapping|@RequestMapping|app\.(get|post|put|delete)|router\.(get|post|put|delete))`),
 }
 func main() {
  if len(os.Args)<2 || os.Args[1]!="scan" { fmt.Println("archgraph scan --path <workspace> --output <directory>"); os.Exit(2) }
@@ -90,7 +90,7 @@ func scanRepo(root string,g *Graph) error {
    line:=1+strings.Count(text[:loc[0]],"\n");id:=addNode(g,kind,name,root,Evidence{root,rel,line,"deterministic-pattern","candidate match; requires contextual validation"})
    if service:=nearest(p,services);service!=""{g.Edges=append(g.Edges,Edge{service,id,"CONTAINS_OR_USES","inferred",[]Evidence{{root,rel,line,"path-association","source file is beneath codeway directory"}}})}
   }
-  if ext==".tf" { re:=regexp.MustCompile(`(?m)^\\s*resource\\s+"([^"]+)"\\s+"([^"]+)"`);for _,m:=range re.FindAllStringSubmatch(text,-1){addNode(g,"AWSResource",m[2],root,Evidence{root,rel,0,"terraform",m[1]})} }
+  if ext==".tf" { re:=regexp.MustCompile(`(?m)^\s*resource\s+"([^"]+)"\s+"([^"]+)"`);for _,m:=range re.FindAllStringSubmatch(text,-1){addNode(g,"AWSResource",m[2],root,Evidence{root,rel,0,"terraform",m[1]})} }
  }
  return nil
 }
