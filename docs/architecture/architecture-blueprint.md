@@ -26,8 +26,7 @@ Example PowerShell workflow:
 
     Workspace with many Git repositories
        -> codeway.yaml discovery and service identity
-       -> Graphify code-only extraction
-       -> language and framework adapters
+       -> native language and framework extractors
        -> API, event, AWS and database discoverers
        -> Go normalization and stable identity
        -> evidence and confidence classification
@@ -35,7 +34,7 @@ Example PowerShell workflow:
        -> architecture.json, Markdown and Mermaid
        -> diff, impact analysis and journey selection
 
-Graphify supplies local code-level graph extraction. Its raw artifacts remain separate until a validated normalization adapter maps them into the canonical graph. The Go core handles repository discovery, identity, enrichers, resource correlation, normalization, evidence, validation, diff, impact and journey orchestration. Neo4j is optional future infrastructure, not a v1 requirement.
+ArchGraph owns its extraction and graph-construction pipeline. Native Go-based language and framework adapters produce structured architecture facts, which the Go core normalizes, correlates and validates before adding them to the canonical graph. The core handles repository discovery, identity, resource correlation, evidence, validation, diff, impact and journey orchestration. Neo4j is optional future infrastructure, not a v1 requirement.
 
 ## 4. Repository discovery and identity
 
@@ -55,7 +54,7 @@ First-class targets:
 - TypeScript and JavaScript: modules, routes, clients, event handlers, database access and AWS SDK v3.
 - React framework adapter: components, hooks, routes, state/data-fetching layers and frontend-to-backend API dependencies.
 
-React is a framework adapter, not a separate language. Graphify remains the default code graph; native adapters should add domain facts Graphify does not provide, not duplicate its work. Unsupported syntax and languages remain in inventory with unsupported or partial analysis status.
+React is a framework adapter, not a separate language. Native language and framework adapters are responsible for extracting code structure and domain-specific architecture facts. Shared extraction interfaces and the canonical schema should prevent duplicated work across adapters. Unsupported syntax and languages remain in inventory with unsupported or partial analysis status.
 
 ## 6. AWS and event intelligence
 
@@ -126,7 +125,7 @@ Detailed extraction caches, temporary files, debug logs and transient test artif
 
 Snapshots associate with Git SHAs. Keep immutable approved release snapshots and support comparisons across revisions. CI generates reports and validates committed artifacts; developers commit artifact changes. CI must not push commits or rewrite branches.
 
-Version the canonical graph schema. Pin Graphify and validate its output schema. Unknown/incompatible output fails clearly rather than being silently reinterpreted.
+Version the canonical graph schema and validate every extractor's output against explicit adapter contracts. Unsupported or incompatible data must fail clearly rather than being silently reinterpreted.
 
 Quality dimensions include structural validity, service/API/event/resource coverage, relationship evidence, unresolved critical edges, unsupported/partial analysis, staleness and security coverage. Initial thresholds are provisional and must be calibrated on real repository data. Existing gaps are baseline-aware; newly introduced regressions block. CODEOWNERS reviews baseline changes.
 
@@ -163,12 +162,12 @@ Initial CLI families:
     archgraph journey run
     archgraph report
 
-Reuse Graphify MCP initially. Add ArchGraph-specific MCP tools only for normalized architecture queries, impact analysis, journey planning or reporting that Graphify does not provide.
+Add ArchGraph-specific MCP tools when the normalized architecture graph supports reliable queries, impact analysis, journey planning or reporting.
 
 ## 14. Implementation phases
 
 1. Reconnaissance: inspect real codeway files, Graphify output, internal AWS wrappers, SDK versions, IaC conventions and a representative business journey.
-2. Local graph foundation: CLI, workspace discovery, identity, Graphify adapter, canonical schema, artifacts and validation.
+2. Local graph foundation: CLI, workspace discovery, identity, native extraction adapters, canonical schema, artifacts and validation.
 3. Relationship intelligence: six language/framework targets, API/event/AWS/database discovery, wrapper mapping, lineage.
 4. Impact and CI: snapshots, diffs, coverage baselines, hooks, PR reports and CODEOWNERS review.
 5. Journey engine: journey schema, approval, minimal environment planning, event-driven runner and cleanup.
