@@ -68,9 +68,7 @@ ArchGraph scans a workspace, discovers nested Git repositories and service ident
 - JSON and Markdown output.
 - One-shot Docker execution with read-only source mounts.
 
-**Not yet implemented:** Graphify invocation/normalization, deep AST analysis, cross-repository edge resolution, full resource mapping, schema-level database discovery, field lineage, security scanner integrations, graph diff/impact analysis and journey execution. Controlled multi-hop traversal, cycle classification and AI/MCP-facing architecture queries are target capabilities, not claims about the current MVP.
-
-**Graphify status:** Graphify is part of the target architecture as a potential code-level extraction engine, but it is not currently integrated into the MVP. ArchGraph's canonical graph, normalization and correlation layer remain the core product responsibility; Graphify should be an optional/pluggable extraction source rather than a hard runtime dependency.
+**Not yet implemented:** deep AST analysis, cross-repository edge resolution, full resource mapping, schema-level database discovery, field lineage, security scanner integrations, graph diff/impact analysis and journey execution. Controlled multi-hop traversal, cycle classification and AI/MCP-facing architecture queries are target capabilities, not claims about the current MVP.
 
 ## Docker workflow
 
