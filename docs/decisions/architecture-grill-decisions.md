@@ -5,7 +5,7 @@ This document captures the final choices from the architecture grill. It is a st
 ## Decisions 1-20: Core discovery and governance
 
 1. **AI-free discovery:** no LLM calls during scanning, parsing, graph generation, enrichment or validation.
-2. **Graph location:** local-first Graphify graph now; optional hybrid shared Neo4j later.
+2. **Graph location:** local-first canonical ArchGraph graph; optional hybrid shared Neo4j later.
 3. **Scan triggers:** manual scans, incremental pre-commit, full pre-push and CI.
 4. **Git hooks:** incremental pre-commit and full pre-push consistency scan; policy-based blocking.
 5. **Artifacts:** commit full lightweight graph artifacts; keep detailed caches and transient data local.
@@ -67,7 +67,7 @@ This document captures the final choices from the architecture grill. It is a st
 55. **Source access:** read-only scanning by default.
 56. **Graph identity:** stable IDs based on logical identity, not file paths or line numbers alone.
 57. **Schema evolution:** explicit graph schema versioning, validation and migration support.
-58. **Graphify compatibility:** pin supported Graphify version and validate output schema; fail clearly on incompatibility.
+58. **Extractor compatibility:** version native language/framework adapters and validate their output against the canonical graph schema; fail clearly on incompatibility.
 59. **Parsing fallback:** unsupported constructs are reported with evidence and partial coverage, never silently discarded.
 60. **Language targets (updated):** Go, Java, Python, React, TypeScript and JavaScript. React gets a framework-specific adapter for components, hooks, routes and API clients.
 
@@ -80,7 +80,7 @@ This document captures the final choices from the architecture grill. It is a st
 65. **Runtime intelligence:** optional future enhancement; static analysis remains the v1 foundation.
 66. **Reports:** machine-readable JSON, human-readable Markdown and Mermaid diagrams.
 67. **CLI:** commands for scan, diff, validate, query, impact, journey and report.
-68. **MCP:** reuse Graphify MCP initially; add ArchGraph-specific tools only for demonstrated gaps.
+68. **MCP:** add ArchGraph-specific tools for normalized architecture queries, impact analysis, journey planning or reporting when those capabilities are ready.
 69. **Performance:** incremental scans, caching and dependency-aware invalidation, with full reproducible CI scans.
 70. **Rollout:** phased delivery from graph foundation to relationship intelligence, impact analysis, journey testing, security and optional hybrid scale.
 
@@ -89,7 +89,6 @@ This document captures the final choices from the architecture grill. It is a st
 - React is a framework adapter, not a programming language.
 - Dependency presence is not proof that a service actually uses an AWS resource.
 - Shared database access is a fact, not automatically a defect.
-- Graphify output is not the canonical ArchGraph graph until schema normalization is implemented and validated.
 - Proposed quality thresholds are starting targets, not measured coverage claims.
 - The actual codeway.yaml format and internal AWS wrapper patterns must be inspected before parser behavior is finalized.
 - Docker one-shot mode is the selected operating model: mount workspace read-only, scan, export, exit. No daemon/API server in v1.
