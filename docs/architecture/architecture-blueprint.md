@@ -166,18 +166,17 @@ Add ArchGraph-specific MCP tools when the normalized architecture graph supports
 
 ## 14. Implementation phases
 
-1. Reconnaissance: inspect real codeway files, Graphify output, internal AWS wrappers, SDK versions, IaC conventions and a representative business journey.
+1. Reconnaissance: inspect real codeway files, internal AWS wrappers, SDK versions, IaC conventions and a representative business journey.
 2. Local graph foundation: CLI, workspace discovery, identity, native extraction adapters, canonical schema, artifacts and validation.
 3. Relationship intelligence: six language/framework targets, API/event/AWS/database discovery, wrapper mapping, lineage.
 4. Impact and CI: snapshots, diffs, coverage baselines, hooks, PR reports and CODEOWNERS review.
 5. Journey engine: journey schema, approval, minimal environment planning, event-driven runner and cleanup.
 6. Security: scanner integrations, finding correlation, secret redaction and baseline gates.
-7. Optional hybrid scale: assess Graphify MCP gaps and optional Neo4j backend.
+7. Optional hybrid scale: assess ArchGraph query and MCP requirements, plus an optional Neo4j backend.
 
 ## 15. Validation requirements before production claims
 
 - Obtain representative real codeway.yaml files; do not invent schema.
-- Pin and inspect actual Graphify output format/version.
 - Collect internal AWS wrapper examples.
 - Validate resource logical-name to code-reference mapping.
 - Document static analysis limits for reflection, dynamic dispatch, generated queries and serializers.
