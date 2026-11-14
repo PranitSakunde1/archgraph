@@ -30,7 +30,7 @@ Static scanning and exports must work without runtime instrumentation. OpenTelem
 
 ### 4. Deployment
 
-The primary interface is one native Go CLI. Docker is optional for reproducible packaging and isolated execution. No always-on daemon or server is required for core scanning.
+The primary static-analysis interface is one native Go CLI. Docker is optional for reproducible packaging and isolated execution. Static scanning remains one-shot. Runtime observation is a separate native local process on the Docker host, including WSL/Linux, not an observer container. The observer must not require Docker socket access from a container.
 
 ### 5. Initial language scope
 
@@ -50,7 +50,17 @@ Evidence classifications must distinguish at least:
 
 No relationship may be silently promoted from inferred, unresolved or runtime-observed to statically confirmed. Unknown behavior remains visible. The product must not claim 100% completeness; it must report supported coverage, unresolved constructs and analysis limitations.
 
-### 7. Generated context and Git workflow
+### 7. Local Docker runtime observation
+
+The runtime observer runs as a native host process and discovers local containers through the Docker host API/CLI integration. Docker events and inspection provide container lifecycle and declared topology metadata only; they do not prove application-level communication.
+
+Actual HTTP/RPC, database and messaging relationships are captured through optional OpenTelemetry instrumentation and a local OTLP receiver/export path. Runtime collection, correlation, storage and graph updates stay on the local machine. No SaaS backend, cloud service, LLM or external telemetry destination is required.
+
+Static evidence, Docker topology evidence and runtime-observed application relationships remain separate. Runtime observations carry capture time/window, environment, service/container identity and trace correlation metadata where available. Missing instrumentation is an observability gap, not evidence that a relationship does not exist.
+
+Do not persist request/response bodies, credentials, authorization headers or raw SQL parameter values by default. Redact sensitive attributes and provide configurable local retention/deletion. Static scanning must work independently when the observer is stopped.
+
+### 8. Generated context and Git workflow
 
 The target service repository receives generated Markdown, Mermaid and JSON architecture context. JSON is the canonical machine-readable representation; diagrams and prose are derived from it.
 
@@ -81,6 +91,7 @@ Regeneration occurs in the Git commit workflow for relevant source changes. Hook
 5. Add strict validation, deterministic export and CI drift checks.
 6. Add optional OpenTelemetry ingestion and evidence reconciliation.
 7. Add impact analysis and advanced graph queries after the graph foundation is reliable.
+8. Implement the native host runtime observer, Docker lifecycle/topology discovery, local OTLP ingestion, privacy controls and runtime evidence reconciliation.
 
 ## Acceptance criteria
 
@@ -91,3 +102,5 @@ Regeneration occurs in the Git commit workflow for relevant source changes. Hook
 - Runtime evidence is optional and separately classified.
 - Native CLI works without Docker; Docker packaging remains supported.
 - CI detects stale generated documentation without modifying repository branches.
+- Runtime observer runs natively on the host, uses local-only telemetry handling and does not require a privileged observer container.
+- Docker topology facts are not misrepresented as observed application calls.
