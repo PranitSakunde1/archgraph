@@ -1,8 +1,8 @@
 # Docker Runtime Design
 
-## Operating contract
+## Static scan operating contract
 
-ArchGraph v1 is a one-shot container:
+ArchGraph static scanning is a one-shot CLI workflow. The CLI can run natively; an optional Docker image packages the same scan workflow. The scan container is not the runtime observer.
 
 1. Start the container.
 2. Discover Git repositories under the mounted workspace.
@@ -12,7 +12,7 @@ ArchGraph v1 is a one-shot container:
 6. Exit with a documented status code.
 7. The caller removes the container with docker run --rm.
 
-There is no background daemon, HTTP API or persistent server in v1.
+There is no background daemon or API server for static scanning. Runtime observation is handled separately by a native host process described below.
 
 ## Windows PowerShell
 
@@ -49,3 +49,23 @@ Mount a parent workspace containing multiple Git repositories. ArchGraph recursi
 Graphify invocation and graph normalization are target architecture items, not part of the current MVP binary. They will be integrated only after pinning the Graphify output schema and adding acceptance fixtures.
 
 A long-running server/API/MCP mode is intentionally deferred. It must not be added until graph query and journey execution interfaces are stable.
+
+ 
+## Native local runtime observer
+
+The runtime observer is a separate native process on the Docker host, including WSL/Linux. It is not run as a container and does not require mounting the Docker socket into any container.
+
+It connects to the local Docker daemon to observe container lifecycle and declared topology metadata. Docker metadata identifies running containers, images, Compose labels, networks and ports. These facts do not prove application-level requests or data access.
+
+Actual HTTP/RPC, database and messaging relationships require optional OpenTelemetry instrumentation and a local OTLP receiver/export path. The observer correlates telemetry with local container/service identity and writes runtime evidence to local storage. No telemetry is sent to an external destination by default.
+
+Do not persist request/response bodies, credentials, authorization headers, cookies, raw SQL parameter values or message payloads by default. Redact sensitive attributes, configure retention, and keep raw traces separate from committed architecture artifacts.
+
+Suggested lifecycle commands (target interface, not implemented yet):
+
+    archgraph runtime start
+    archgraph runtime status
+    archgraph runtime snapshot
+    archgraph runtime stop
+
+The observer must not start, stop, restart or otherwise modify application containers. Static scanning and export remain usable while the observer is stopped.
