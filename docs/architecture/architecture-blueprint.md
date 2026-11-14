@@ -2,7 +2,8 @@
 
 **Status:** Consolidated target architecture  
 **Implementation:** Go  
-**Execution:** One-shot Docker container  
+**Static execution:** Native Go CLI (optional one-shot Docker packaging)  
+**Runtime observation:** Native local host process  
 **Discovery:** Deterministic and AI-free  
 **Language targets:** Go, Java, Python, React, TypeScript, JavaScript
 
@@ -14,9 +15,13 @@ The system must expose uncertainty. A graph edge is not automatically true becau
 
 ## 2. Operating model
 
-A single Docker invocation scans one workspace or an explicit set of repositories, writes artifacts to a mounted output directory and exits. Source mounts are read-only. Temporary extraction work happens inside the container. Generated artifacts go to /output. No daemon, API server or persistent container is part of v1.
+Static analysis is a one-shot native Go CLI workflow. Docker remains an optional packaging/execution mode for reproducible isolated scans; it is not the required deployment model. Source scanning is read-only by default and writes generated artifacts only to the configured output directory. No always-on server is required for static analysis.
 
-Example PowerShell workflow:
+Runtime observation is a separate native local process running on the Docker host, including WSL/Linux. It watches local container lifecycle/topology and receives optional application telemetry through a local OTLP endpoint. It can run while service containers are active and updates local runtime evidence in the canonical graph. It is not deployed as a container and does not require exposing the Docker socket to an observer container.
+
+All runtime data remains local. No SaaS observability backend, cloud service, LLM or external telemetry destination is required. Runtime observation can be stopped without affecting static scans or exports.
+
+Optional Docker scan workflow (PowerShell):
 
     docker build --pull -t archgraph:dev .
     New-Item -ItemType Directory -Force .\archgraph-output | Out-Null
@@ -185,3 +190,81 @@ Add ArchGraph-specific MCP tools when the normalized architecture graph supports
 - Benchmark representative repository subsets before promising scan times.
 
 The largest engineering risk is incorrect inference from undocumented conventions, wrapper abstractions and dynamic behavior. Make uncertainty visible, measure coverage and validate against repository fixtures before enforcing aggressive gates.
+
+ 
+## 16. Local Docker runtime observer
+
+### 16.1 Deployment boundary
+
+The observer is a native local process on the Docker host, not a Docker container. It supports the developer's local Docker environment, including Docker Desktop with WSL2/Linux workflows. It is separate from the one-shot static scan command.
+
+The observer uses the local Docker API/CLI integration to discover containers, images, labels, networks, port mappings and lifecycle events. Access to the Docker daemon is powerful and must be treated as privileged host access. Keep the observer process under the user's local account, do not expose the Docker API over an unauthenticated TCP socket, and do not mount the Docker socket into an observer container.
+
+### 16.2 Two evidence channels
+
+**Docker topology channel**
+- Container create/start/stop/die/restart events.
+- Image identity and digest where available.
+- Compose project/service labels and user-defined labels.
+- Network membership, aliases, exposed/published ports and declared environment metadata, with secret values redacted.
+- Container-to-container network reachability candidates.
+
+This channel describes deployment/container topology. It does not prove that one application called another.
+
+**Application telemetry channel**
+- Local OTLP receiver/export path for OpenTelemetry spans.
+- HTTP and RPC client/server spans for observed request paths.
+- Instrumented database client operations, represented without raw parameter values.
+- Instrumented messaging producer/consumer spans and correlation context.
+- Trace/span relationships and service identity mapping.
+
+Actual application relationships are runtime-observed only when supported by telemetry evidence. Services without instrumentation remain marked as runtime coverage gaps. Network connections alone must not be upgraded to semantic API or database relationships.
+
+### 16.3 Local-only processing and privacy
+
+- No telemetry is sent to external services by default.
+- No cloud account, hosted observability service or LLM is required.
+- Do not capture or persist request/response bodies, authorization headers, credentials, cookies, raw SQL parameter values or message payloads by default.
+- Redact sensitive span attributes before persistence and export.
+- Make retention windows, storage paths and explicit local deletion configurable.
+- Keep raw traces separate from committed architecture artifacts; commit only sanitized, aggregated graph evidence when repository policy allows it.
+- Runtime snapshots record observation time/window and environment so short-lived observations are not mistaken for permanent architecture declarations.
+
+### 16.4 Graph reconciliation
+
+Keep these facts distinguishable:
+- static source evidence;
+- declared configuration and Compose topology;
+- Docker container/network topology;
+- runtime-observed application interactions;
+- inferred or unresolved relationships.
+
+A runtime observation enriches the canonical graph; it does not overwrite static evidence. An absent span is not proof of an absent edge. Runtime evidence should be linked to service/container identity using explicit OpenTelemetry resource attributes and Compose labels where available. Ambiguous identity mappings remain unresolved for review.
+
+### 16.5 Lifecycle and CLI shape
+
+The intended command family is:
+
+    archgraph runtime start
+    archgraph runtime status
+    archgraph runtime snapshot
+    archgraph runtime stop
+
+The exact process supervision and IPC contract will be specified during implementation. Static commands remain independently usable:
+
+    archgraph scan
+    archgraph validate
+    archgraph export
+
+The observer can run while application containers are active. It can produce periodic local snapshots or update the local graph incrementally. Stopping the observer must not stop, restart or modify application containers.
+
+### 16.6 Acceptance criteria
+
+- Observer runs as a native host process and does not run as a privileged observer container.
+- Docker start/stop and topology facts are discovered locally.
+- Instrumented service calls appear as runtime-observed edges with trace provenance.
+- Uninstrumented services are reported as runtime coverage gaps.
+- No telemetry leaves the machine by default.
+- Sensitive payloads and credentials are not persisted.
+- Runtime observations never silently become static-confirmed edges.
+- Static scanning and export work with the observer stopped.
