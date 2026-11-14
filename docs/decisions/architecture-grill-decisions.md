@@ -92,3 +92,33 @@ This document captures the final choices from the architecture grill. It is a st
 - Proposed quality thresholds are starting targets, not measured coverage claims.
 - The actual codeway.yaml format and internal AWS wrapper patterns must be inspected before parser behavior is finalized.
 - Docker one-shot mode is the selected operating model: mount workspace read-only, scan, export, exit. No daemon/API server in v1.
+
+## Decisions 71-80: Hybrid analyzer architecture (locked 2026-11-15)
+
+71. **Single product and repository:** continue development in the existing ArchGraph repository. Do not create a separate Java/Go graph product. ArchGraph remains the single user-facing tool and owns orchestration, canonical graph semantics, evidence validation and exports.
+
+72. **Parser strategy:** use a hybrid analyzer architecture. Go receives native semantic analysis using the Go toolchain ecosystem (packages, AST, types, SSA and callgraph). Java receives Java/compiler-aware analysis plus Spring-specific discovery. Tree-sitter is the shared syntax extraction and fallback layer, not a replacement for compiler/type resolution. Additional language adapters may use the shared parser where appropriate.
+
+73. **Third-party parser boundary:** Graphify and other external analyzers may be evaluated as optional adapters or implementation references. They must not own ArchGraph's canonical schema, evidence policy, identity rules or validation. No mandatory Graphify dependency is selected by this decision.
+
+74. **Runtime analysis:** optional. Static analysis and export must work without runtime instrumentation or trace data. OpenTelemetry observations may enrich the graph when provided; they must remain distinguishable from static evidence and include observation provenance.
+
+75. **Deployment model:** one native Go CLI is the primary product interface. Docker remains an optional packaging/execution method. No always-on daemon or local server is required for the core workflow.
+
+76. **Initial language priority:** Java Spring Boot and Go are the first-class implementation targets. Python, TypeScript, JavaScript and React remain future/secondary adapters; React is a framework adapter, not a language.
+
+77. **Canonical graph ownership:** ArchGraph owns a versioned, language-neutral graph schema. Analyzer adapters emit normalized facts; the core validates and reconciles them. JSON is the canonical machine-readable snapshot; Markdown and Mermaid are derived views.
+
+78. **Evidence-first strictness:** every published source-derived relationship must carry provenance and evidence. Unresolved, inferred, declared, statically confirmed, runtime-observed and conflicting evidence must remain distinguishable. No unsupported relationship may be silently promoted to confirmed. Do not claim 100% discovery completeness; report coverage and unresolved behavior honestly.
+
+79. **Repository documentation outputs:** generated architecture context is stored in the target service repository as Markdown, Mermaid and structured JSON. Generated artifacts are reproducible, versioned and separated from manually maintained documentation.
+
+80. **Git refresh and validation:** regenerate affected architecture artifacts during the Git commit workflow and verify them in CI. Hooks must not stage unrelated user changes. CI is authoritative and must fail when committed generated artifacts are stale or invalid; CI does not push commits or rewrite branches.
+
+## Superseding corrections
+
+- Decisions 71-80 supersede any earlier interpretation that ArchGraph is Docker-only. The selected model is native CLI first, Docker optional.
+- Decision 74 makes runtime observation an optional enrichment layer, not a prerequisite for graph generation.
+- Decision 72 establishes hybrid semantic analysis as the selected parser strategy, rather than Tree-sitter-only or regex-only extraction.
+- Decision 78 defines strict evidence traceability, not a guarantee of complete discovery or 100% accuracy.
+- The existing Go core remains the product's orchestration and graph authority; Java analysis may run through a bundled, versioned local adapter process if required by Java tooling.
