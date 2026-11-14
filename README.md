@@ -1,111 +1,231 @@
 # ArchGraph
 
-Deterministic, local-first architecture discovery for multi-repository workspaces.
+**Local-first, deterministic architecture intelligence for software repositories and multi-repository workspaces.**
 
-ArchGraph is being built to give AI agents a reusable, evidence-backed view of a software system. Instead of asking an LLM to repeatedly inspect repositories and reconstruct service relationships for every task, ArchGraph aims to discover and maintain those relationships once, then expose focused architectural context for queries, impact analysis and engineering workflows.
+ArchGraph builds a reusable, evidence-backed knowledge base from software repositories. It discovers architecture facts, reconciles them into a versioned canonical graph, and generates human-readable documentation. Developers and AI coding agents can then retrieve focused architectural context instead of repeatedly rediscovering the same dependencies from source code.
 
-> **Core idea:** Let ArchGraph handle architecture discovery and relationship mapping; let AI focus on reasoning, trade-offs and decisions.
+> **Core idea:** Build architecture knowledge once, keep it fresh, and make it reusable. ArchGraph discovers and explains the system; developers and AI agents use that knowledge to reason about changes.
 
 ## Why ArchGraph?
 
-When an AI agent works across a large codebase, it may need to rediscover the same information repeatedly: which service owns an endpoint, who publishes or consumes an event, which resources are used, and what downstream components may be affected by a change. That discovery consumes context-window capacity, tokens, model calls and wall-clock time before the actual engineering question is addressed.
+When an engineer or AI coding agent works across a large system, it often has to rediscover basic facts: which service owns an endpoint, which component calls another, who publishes or consumes an event, which database resources are accessed, and what may be affected by a change.
 
-ArchGraph is designed to move repeatable discovery out of the LLM loop:
+That repeated discovery consumes engineering time, context-window capacity and potentially model tokens and calls. ArchGraph aims to move repeatable architecture discovery into a deterministic local tool:
 
-1. Scan repositories and extract architecture signals using deterministic analysis.
-2. Normalize those signals into a canonical graph of repositories, services, APIs, events, resources and data dependencies.
-3. Preserve evidence and distinguish confirmed, inferred and unresolved relationships.
-4. Let tools and AI agents query only the relevant part of the graph for a task.
+1. Analyze repositories using language- and framework-aware analyzers.
+2. Normalize discovered facts into a language-neutral canonical graph.
+3. Attach evidence and provenance to relationships, preserving uncertainty.
+4. Generate navigable architecture documentation and diagrams.
+5. Expose full-graph exports and focused retrieval interfaces for developers and AI agents.
+6. Refresh affected knowledge as source repositories change.
 
-This can reduce repeated context construction and unnecessary LLM work. **Actual token, cost and latency savings are not yet measured and will depend on graph coverage, freshness, query selectivity and the cost of maintaining the graph.** ArchGraph does not eliminate the need for AI reasoning or direct source inspection.
+This may reduce repeated source inspection and prompt construction. **Token, cost and latency savings have not yet been benchmarked.** Results will depend on analyzer coverage, graph freshness, retrieval selectivity and the cost of maintaining the knowledge base. ArchGraph does not replace source inspection or AI reasoning.
 
-## What makes this useful?
+## Product principles
 
-- **Reusable architectural context:** discover relationships once and reuse them across multiple questions and sessions.
-- **Cross-repository visibility:** connect services, APIs, event producers/consumers and resource usage across repository boundaries.
-- **Focused retrieval:** provide a task-specific subgraph instead of sending large amounts of unrelated source code to an LLM.
-- **Impact analysis foundation:** traverse dependency relationships to identify potentially affected services and journeys.
-- **Evidence and explainability:** attach source references and discovery methods to relationships; keep confirmed, inferred and unresolved facts separate.
-- **Controlled graph traversal:** bound traversal by depth, scope and visited-node tracking. Detect and classify cycles so traversal terminates safely, while preserving intentional architecture loops as relationships rather than treating every cycle as an error.
-- **AI-independent discovery:** scanning, parsing, graph construction and validation are designed to run without LLM calls.
+- **Local-first:** core analysis and retrieval run locally. No mandatory cloud service, SaaS backend or LLM.
+- **AI-free discovery:** scanning, parsing, graph construction, reconciliation and validation do not call an LLM.
+- **Evidence-first:** every source-derived relationship carries provenance. Confirmed, declared, inferred, unresolved, conflicting and runtime-observed evidence remain distinct.
+- **Canonical graph ownership:** ArchGraph owns a versioned, language-neutral graph schema. Analyzer adapters emit normalized facts; the core validates and reconciles them.
+- **Reusable knowledge:** repository-level knowledge remains independently useful, while workspace knowledge connects repositories and cross-service relationships.
+- **Human-readable outputs:** architecture handbooks, technical references and diagrams are first-class outputs, not just graph exports.
+- **Incremental by default:** changed files and dependency invalidation drive refreshes; full scans remain available for verification and recovery.
+- **Safe by default:** source repositories are read-only. Writes are limited to ArchGraph-owned outputs and explicitly approved integrations.
+- **Honest coverage:** unresolved behavior and unsupported constructs are reported. ArchGraph does not claim complete discovery or 100% accuracy.
 
-## How this can save AI resources
+## What ArchGraph is designed to provide
 
-| AI-only workflow | ArchGraph-assisted workflow |
-|---|---|
-| Repeatedly inspect source files to rediscover dependencies | Reuse previously discovered graph relationships |
-| Reconstruct cross-service flows in the prompt | Traverse the relevant producer/consumer or dependency path |
-| Send broad repository context to the model | Retrieve a smaller, task-specific subgraph with evidence |
-| Spend model reasoning on basic architecture discovery | Reserve model reasoning for intent, ambiguity and decisions |
+- **Repository and workspace inventory:** discover repositories, services and their identities, including `codeway.yaml` metadata when present.
+- **Code relationships:** packages, modules, types, functions, imports, calls and framework-specific relationships where analyzers can establish them.
+- **API and event intelligence:** endpoints, contracts, clients, producers, consumers, queues and topics.
+- **Data access and lineage:** database/table/collection access and field-level lineage where statically identifiable.
+- **AWS and infrastructure discovery:** resource usage and declarations from source, dependencies, configuration and supported infrastructure definitions.
+- **Impact analysis:** graph diffs, dependency traversal and affected-service/journey exploration.
+- **Evidence and explainability:** source locations, analyzer identity, evidence classification and limitations.
+- **Agent integration:** focused CLI/JSON retrieval and read-only MCP tools as capabilities are implemented.
+- **Optional runtime enrichment:** local Docker metadata and OpenTelemetry observations, kept separate from static evidence.
 
-The expected savings are less repeated source ingestion, fewer redundant discovery steps and potentially fewer tokens or model calls. This is an architectural hypothesis, not a benchmark result. Graph generation, refreshes, storage and query execution also consume compute; the goal is to make that work reusable and cheaper than repeatedly rebuilding the same context.
+A dependency declaration or SDK import is not proof that an application actually uses a resource. Docker network membership is not proof of an application call. ArchGraph must not silently promote clues into confirmed relationships.
 
-## Trade-offs and limitations
+## Architecture at a glance
 
-ArchGraph adds an architecture index that must be built, validated and kept current. It is not a free replacement for reading code.
+ArchGraph is a **native Go CLI first**. Docker is an optional packaging and execution method, not a requirement for static analysis.
 
-| Pros | Cons / risks |
-|---|---|
-| Reusable context across tasks and AI sessions | Requires initial scanning and ongoing refreshes |
-| Better visibility across repositories and services | Incomplete parsers can miss relationships |
-| Evidence-backed, inspectable relationships | Incorrect inference can mislead downstream analysis |
-| Focused graph retrieval can reduce prompt size | Large or noisy graphs need filtering and traversal limits |
-| Repeatable dependency and cycle analysis | Dynamic dispatch, reflection and runtime behavior can be hard to resolve statically |
-| No LLM required for core discovery | Graph maintenance, storage and query costs still exist |
-| Can support impact analysis and journey selection | Impact results are only as complete as the graph and its evidence |
+The architecture uses a hybrid analyzer strategy:
 
-**Important:** a graph edge is not automatically a runtime truth. Naming conventions, dependency declarations or matching resource names are clues, not proof. ArchGraph must preserve evidence, confidence and uncertainty rather than silently turning guesses into confirmed relationships.
+- **Go:** native semantic analysis using the Go toolchain ecosystem, including packages, AST, types, SSA and call-graph capabilities where appropriate.
+- **Java / Spring Boot:** compiler-aware analysis plus Spring-specific discovery. A bundled, versioned local adapter process may be used where Java tooling requires it.
+- **Tree-sitter:** shared syntax extraction and fallback layer. It does not replace compiler/type resolution where semantic analysis is required.
+- **Other adapters:** Python, TypeScript, JavaScript and React are secondary/future coverage targets. React is a framework adapter, not a programming language.
 
-## Current MVP
+External analyzers may be evaluated as optional adapters or implementation references. They do not own ArchGraph's canonical schema, evidence policy, identity rules or validation.
 
-ArchGraph scans a workspace, discovers nested Git repositories and service identities from recursively found codeway.yaml/codeway.yml files, and emits a JSON graph plus a Markdown inventory report. The current scanner uses deterministic source-pattern candidates. Those matches are evidence for further analysis, not proof of a complete runtime relationship.
+### Canonical graph and evidence
+
+JSON is the canonical machine-readable graph. Markdown documentation and Mermaid diagrams are derived from that graph.
+
+The graph uses typed entities and relationships, stable logical identities, schema versioning and explicit migrations. Relationship evidence must distinguish:
+
+- `STATIC_CONFIRMED`
+- `DECLARED`
+- `RUNTIME_OBSERVED`
+- `INFERRED`
+- `UNRESOLVED`
+- `CONFLICTING`
+
+Every relationship should retain enough provenance to explain where it came from, how it was discovered and what limitations apply.
+
+### Repository and workspace knowledge
+
+Each analyzed repository owns its detailed generated knowledge under `.archgraph/`. A parent workspace maintains a consolidated graph and documentation for cross-repository relationships. If the parent directory is itself a Git repository, its repository knowledge and workspace knowledge are stored separately.
+
+The graph and documentation are versioned generated artifacts. Manually maintained documentation must not be overwritten.
+
+## Current implementation status
+
+ArchGraph is an evolving project. The existing MVP provides an initial deterministic inventory and candidate-discovery workflow; it is **not yet the complete semantic architecture intelligence system described by the target architecture**.
+
+The current MVP includes:
 
 - Recursive discovery of Git repositories under a workspace.
-- Service/Lambda identity candidates from common codeway YAML keys.
+- Service/Lambda identity candidates from common `codeway.yaml` / `codeway.yml` keys.
 - Inventory of Go, Java, Python, TypeScript and JavaScript source files.
 - Initial deterministic candidates for AWS operations, API routes, database access and Terraform resources.
 - Evidence attached to discovered nodes and inferred source-to-service containment edges.
-- JSON and Markdown output.
+- JSON graph and Markdown inventory output.
 - One-shot Docker execution with read-only source mounts.
 
-**Not yet implemented:** deep AST analysis, cross-repository edge resolution, full resource mapping, schema-level database discovery, field lineage, security scanner integrations, graph diff/impact analysis and journey execution. Controlled multi-hop traversal, cycle classification and AI/MCP-facing architecture queries are target capabilities, not claims about the current MVP.
+The following are target capabilities and must not be treated as complete unless verified in the implementation and tests:
 
-## Docker workflow
+- Deep Go and Java/Spring semantic analysis.
+- Reliable cross-repository relationship resolution.
+- Comprehensive AWS wrapper and resource mapping.
+- Full database schema and field-level lineage discovery.
+- Security scanner integrations and correlated security analysis.
+- Graph diff, dependency-aware impact analysis and journey execution.
+- Incremental invalidation, freshness validation and atomic regeneration.
+- Read-only MCP tools and layered agent-context retrieval.
+- Native local runtime observation and OpenTelemetry enrichment.
+- Production packaging, Windows support and release automation.
 
-    docker build --pull -t archgraph:dev .
+Coverage must be reported by repository, language/framework, infrastructure type and evidence class. Unsupported constructs and unresolved behavior must remain visible.
 
-    New-Item -ItemType Directory -Force .\archgraph-output | Out-Null
+## Getting started
 
-    docker run --rm -v "D:\work\repositories:/workspace:ro" -v "${PWD}\archgraph-output:/output" archgraph:dev scan --path /workspace --output /output
+### Requirements
 
-The workspace can contain multiple nested Git repositories. ArchGraph discovers them automatically. The output directory is mounted separately so source repositories remain read-only.
+- Go toolchain compatible with the version declared in `go.mod`.
+- Git.
+- Optional: Docker, if you want to use the container workflow.
 
-## Local development
+### Build and test
 
-    go test ./...
-    go vet ./...
-    go run ./cmd/archgraph scan --path ./fixtures --output ./out
+```bash
+git clone https://github.com/PranitSakunde1/archgraph.git
+cd archgraph
 
-## Documentation
+go test ./...
+go vet ./...
+go build ./cmd/archgraph
+```
 
-- [ArchGraph by persona: Product Manager, Business Analyst, Tech Lead, QA Engineer, QA Lead and Developer](docs/product/persona-use-cases.md)
+### Run the current MVP
+
+```bash
+go run ./cmd/archgraph scan --path ./fixtures --output ./out
+```
+
+Check `archgraph --help` for the commands currently implemented. The command list and flags will evolve as the CLI is developed.
+
+## Optional Docker workflow
+
+Docker is an optional one-shot execution path. Mount source repositories read-only and mount a separate output directory for generated artifacts.
+
+Example for PowerShell:
+
+```powershell
+docker build --pull -t archgraph:dev .
+
+New-Item -ItemType Directory -Force .\\archgraph-output | Out-Null
+
+docker run --rm `
+  -v "D:\\work\\repositories:/workspace:ro" `
+  -v "${PWD}\\archgraph-output:/output" `
+  archgraph:dev scan --path /workspace --output /output
+```
+
+The scan container should scan, export and exit. Static analysis must also work natively without Docker.
+
+## Target language and framework coverage
+
+| Priority | Technology | Intended analysis |
+|---|---|---|
+| First-class | Go | Compiler/toolchain-aware semantic analysis |
+| First-class | Java / Spring Boot | Compiler-aware and Spring-specific analysis |
+| Secondary / future | Python | Language adapter |
+| Secondary / future | TypeScript and JavaScript | Syntax and framework-aware adapters |
+| Framework adapter | React | Components, hooks, routes and API clients |
+
+A technology is not considered supported merely because files are inventoried. Meaningful support requires analyzer behavior, fixtures, tests and honest coverage reporting.
+
+## Planned developer and agent workflows
+
+The target CLI surface includes commands in these areas:
+
+- **Discovery:** init, scan, status and report.
+- **Validation:** validate freshness, graph structure, coverage and generated artifacts.
+- **Exploration:** graph, search, dependencies, AWS, security and explain.
+- **Change analysis:** graph diff and impact.
+- **Journeys:** inspect and run explicitly approved journeys.
+- **Knowledge:** export full graph or retrieve focused context.
+- **Integration:** read-only MCP server and opt-in Git hooks.
+- **Runtime:** separate start/status/snapshot/stop workflow for optional local observation.
+
+These are target capabilities. Use CLI help and the implementation to determine which commands are currently available.
+
+## Runtime observation (optional)
+
+Static analysis is the foundation and does not require runtime instrumentation.
+
+The optional runtime observer is designed to run as a native local process on the Docker host, including WSL/Linux. Docker metadata provides container and network topology evidence only; it does not prove HTTP, RPC, database or messaging interactions. Optional OpenTelemetry instrumentation can provide application-interaction evidence.
+
+Runtime collection and processing remain local. Sensitive payloads, credentials, request/response bodies and raw SQL parameter values must not be persisted by default. Runtime observations remain distinct from static evidence. The observer must not start, stop, restart or modify application containers.
+
+## Git and safety model
+
+- Source scanning is read-only by default.
+- Generated artifacts are written only to ArchGraph-owned paths.
+- Git hooks are opt-in and must preserve existing hooks and configuration.
+- Hooks may stage only ArchGraph-owned files, never unrelated developer changes.
+- CI validates committed generated artifacts and fails when they are stale or invalid.
+- CI does not push commits, rewrite branches or automatically commit regenerated output.
+- No automatic Git commit or push.
+- No live AWS account queries are part of v1.
+
+## Documentation and decisions
+
+- [Architecture Grill: Questions and Answers](docs/decisions/architecture-grill-questions-and-answers.md)
+- [Architecture Grill: Final Decision Register](docs/decisions/architecture-grill-decisions.md)
+- [ADR-001: Hybrid Evidence-First Analysis](docs/decisions/ADR-001-hybrid-evidence-first-analysis.md)
 - [Architecture blueprint](docs/architecture/architecture-blueprint.md)
-- [Architecture grill decision register](docs/decisions/architecture-grill-decisions.md)
 - [Docker runtime design](docs/architecture/docker-runtime.md)
-
-## Target language/framework coverage
-
-Go, Java, Python, React, TypeScript and JavaScript. React requires framework-specific component, hook, route and API-client discovery in addition to TypeScript/JavaScript analysis. The full target coverage is planned; current MVP matching is intentionally shallow.
-
-## Design constraints
-
-- No LLM calls during discovery, parsing, graph generation or validation.
-- One-shot Docker execution: scan, export, exit.
-- Read-only source mounts by default.
-- No live AWS account queries in v1.
-- Application architecture is in scope; deployment topology is not.
-- Confirmed, inferred and unresolved relationships must remain distinguishable as discovery matures.
+- [Production build prompt](docs/implementation/ARCHGRAPH-MASTER-BUILD-PROMPT.md)
+- [Product use cases by persona](docs/product/persona-use-cases.md)
 
 ## First engineering milestone
 
-Validate real codeway.yaml examples, internal AWS wrapper implementations, resource definitions and one end-to-end business journey. These become acceptance fixtures before broadening discovery or introducing CI gates.
+Before broadening implementation, validate representative real-world inputs:
+
+1. Actual `codeway.yaml` examples and service identity conventions.
+2. Internal AWS wrapper implementations and SDK usage patterns.
+3. Infrastructure/resource definitions used by target repositories.
+4. Representative Go and Java/Spring Boot services.
+5. At least one end-to-end business journey and its cross-service dependencies.
+
+Turn these into versioned acceptance fixtures. Use them to measure analyzer coverage and relationship correctness before introducing strict quality gates.
+
+## Contributing and implementation governance
+
+Implementation is phased. Each phase must begin with a proposed scope, architecture changes, affected packages/files, dependencies, acceptance criteria, tests and risks. Wait for explicit approval before implementing a phase. At phase completion, run formatting, tests, static analysis and coverage checks, update documentation, report limitations and stop for approval before proceeding.
+
+See the [production build prompt](docs/implementation/ARCHGRAPH-MASTER-BUILD-PROMPT.md) and the decision records for the full engineering constraints.
