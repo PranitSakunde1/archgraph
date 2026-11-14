@@ -122,3 +122,27 @@ This document captures the final choices from the architecture grill. It is a st
 - Decision 72 establishes hybrid semantic analysis as the selected parser strategy, rather than Tree-sitter-only or regex-only extraction.
 - Decision 78 defines strict evidence traceability, not a guarantee of complete discovery or 100% accuracy.
 - The existing Go core remains the product's orchestration and graph authority; Java analysis may run through a bundled, versioned local adapter process if required by Java tooling.
+
+
+## Decisions 81-87: Local Docker runtime observation (locked 2026-11-15)
+
+81. **Runtime observer placement:** run the ArchGraph runtime observer as a native local process on the Docker host, including WSL/Linux environments, not as a container with Docker socket access.
+
+82. **Runtime scope:** observe locally running service containers and their runtime relationships. Docker metadata/events establish container lifecycle, image, labels, networks and port configuration; they do not prove application-level calls.
+
+83. **Application interaction evidence:** use OpenTelemetry instrumentation and a local OTLP receiver/export path to capture actual service calls, request paths and supported database/messaging client operations. Runtime instrumentation is optional per service; missing instrumentation means an explicit observability gap, not proof of no relationship.
+
+84. **Local-only data handling:** runtime collection, correlation, persistence and graph updates remain on the developer's machine. No SaaS observability backend, cloud service, LLM or external telemetry destination is required. The observer must not transmit telemetry externally.
+
+85. **Evidence separation:** Docker-discovered topology, statically confirmed relationships and runtime-observed relationships remain distinct evidence classes. Runtime observations include capture time/window, environment, source container/service identity, instrumentation/source and trace correlation metadata where available.
+
+86. **Privacy and security:** do not persist request/response bodies, credentials, authorization headers, raw SQL parameter values or other sensitive payloads by default. Redact sensitive attributes and support configurable retention and local data deletion. Docker socket access is not granted to an observer container because the observer runs on the host.
+
+87. **Lifecycle and operation:** static scanning remains a one-shot CLI workflow. Runtime observation is a separate start/stop workflow and can run while application containers are active. It can enrich/update the local graph continuously or by explicit snapshot; runtime observation is not required for static graph generation.
+
+### Superseding runtime corrections
+
+- Decision 81 supersedes any suggestion to deploy the runtime observer as a Docker container by default.
+- The ArchGraph scan container remains a one-shot packaging option; the runtime observer is a native host process.
+- Docker events and inspection provide container/topology evidence only. They must never be represented as proof of HTTP, RPC, database or messaging interactions.
+- Runtime data is local-only by default. Any future export or remote forwarding capability requires a separate explicit decision and opt-in.
